@@ -42,6 +42,11 @@ struct Sensor {
 std::vector<Sensor> sensors;
 char sentinel_token[40] = "";
 char device_name[40] = "ESP8266_SENTINEL_DYN";
+char mqtt_host[64] = "broker.hivemq.com";
+char mqtt_port_str[6] = "1883";
+char mqtt_user[32] = "";
+char mqtt_pass[32] = "";
+
 unsigned long lastMsg = 0;
 
 WiFiClient espClient;
@@ -84,6 +89,10 @@ void loadConfig() {
     deserializeJson(doc, f);
     strcpy(sentinel_token, doc["token"] | "");
     strcpy(device_name, doc["name"] | "ESP8266_SENTINEL_DYN");
+    strcpy(mqtt_host, doc["mqtt_host"] | "broker.hivemq.com");
+    strcpy(mqtt_port_str, doc["mqtt_port"] | "1883");
+    strcpy(mqtt_user, doc["mqtt_user"] | "");
+    strcpy(mqtt_pass, doc["mqtt_pass"] | "");
     f.close();
   }
   if (LittleFS.exists(SENSORS_FILE)) {
@@ -120,6 +129,10 @@ void saveConfig() {
   JsonDocument doc;
   doc["token"] = sentinel_token;
   doc["name"] = device_name;
+  doc["mqtt_host"] = mqtt_host;
+  doc["mqtt_port"] = mqtt_port_str;
+  doc["mqtt_user"] = mqtt_user;
+  doc["mqtt_pass"] = mqtt_pass;
   File f = LittleFS.open(CONFIG_FILE, "w");
   serializeJson(doc, f);
   f.close();
@@ -218,6 +231,8 @@ void handleRoot() {
   html += ".btn-del { width: auto; padding: 5px 12px; margin: 0; background: "
           "#e74c3c; font-size: 11px; }";
   html += "option { background: #1d4e89; color: white; }";
+  html += "small { display: block; margin-top: 10px; color: #a2ffd1; "
+          "font-weight: bold; font-size: 10px; text-transform: uppercase; }";
   html += "</style>";
   html += "<script>function toggle(id){ var x = document.getElementById(id); "
           "x.style.display = (x.style.display==='block')?'none':'block'; "
@@ -263,17 +278,34 @@ void handleRoot() {
 
   // SYSTEM CONFIG
   html += "<div class='glass'><h3>System Settings</h3>";
-  html += "<button onclick=\"toggle('set-form')\" class='btn-token'>Change "
-          "Name / Token</button>";
+  html += "<button onclick=\"toggle('set-form')\" class='btn-token'>Configure "
+          "Node & MQTT</button>";
   html += "<div id='set-form' style='display:none; margin-top:15px; "
           "border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;'>";
   html += "<form action='/save_sys' method='GET'>";
+
   html += "<small>Device Name</small><input name='name' value='" +
           String(device_name) + "'>";
   html += "<small>Sentinel Token</small><input type='password' name='token' "
           "value='" +
           String(sentinel_token) + "'>";
-  html += "<button type='submit' style='background:#d35400; color:white;'>Save "
+
+  html += "<div style='margin-top:20px; padding:10px; "
+          "background:rgba(0,0,0,0.2); border-radius:10px;'>";
+  html += "<p style='font-size:12px; margin:0 0 10px 0; color:#f39c12;'>MQTT "
+          "Broker Settings</p>";
+  html +=
+      "<small>Host</small><input name='mh' value='" + String(mqtt_host) + "'>";
+  html += "<small>Port</small><input name='mp' value='" +
+          String(mqtt_port_str) + "'>";
+  html +=
+      "<small>User</small><input name='mu' value='" + String(mqtt_user) + "'>";
+  html += "<small>Password</small><input type='password' name='mpx' value='" +
+          String(mqtt_pass) + "'>";
+  html += "</div>";
+
+  html += "<button type='submit' style='background:#d35400; color:white; "
+          "margin-top:20px;'>Save "
           "Changes</button></form></div></div>";
 
   // FOOTER
@@ -283,7 +315,7 @@ void handleRoot() {
   html += "<a href='/reset_wifi'><button class='btn-wifi'>Reset WiFi "
           "Connection</button></a></div>";
   html += "<p style='font-size: 11px; opacity: 0.5; margin-top: "
-          "20px;'>Firmware v2.5 | Sentinel Project</p>";
+          "20px;'>Firmware v2.6 | Sentinel Project | Closed Hardware Ready</p>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
@@ -291,7 +323,17 @@ void handleRoot() {
 void handleSaveSys() {
   strncpy(device_name, server.arg("name").c_str(), 39);
   strncpy(sentinel_token, server.arg("token").c_str(), 39);
+  strncpy(mqtt_host, server.arg("mh").c_str(), 63);
+  strncpy(mqtt_port_str, server.arg("mp").c_str(), 5);
+  strncpy(mqtt_user, server.arg("mu").c_str(), 31);
+  strncpy(mqtt_pass, server.arg("mpx").c_str(), 31);
+
   saveConfig();
+
+  // Reconfigure MQTT client immediately
+  mqttClient.setServer(mqtt_host, atoi(mqtt_port_str));
+  mqttClient.disconnect(); // Force reconnection in loop
+
   server.sendHeader("Location", "/");
   server.send(302, "text/plain", "");
 }
@@ -328,8 +370,18 @@ void reconnectMQTT() {
   static unsigned long lastRetry = 0;
   if (!mqttClient.connected() && millis() - lastRetry > 10000) {
     lastRetry = millis();
-    Serial.print("Connecting to MQTT...");
-    if (mqttClient.connect(device_name)) {
+    Serial.print("Connecting to MQTT at ");
+    Serial.print(mqtt_host);
+    Serial.print("...");
+
+    bool connected = false;
+    if (strlen(mqtt_user) > 0) {
+      connected = mqttClient.connect(device_name, mqtt_user, mqtt_pass);
+    } else {
+      connected = mqttClient.connect(device_name);
+    }
+
+    if (connected) {
       Serial.println("Success!");
     } else {
       Serial.print("Failed, rc=");
@@ -343,7 +395,7 @@ void collectAndPublish() {
     return;
   JsonDocument doc;
   doc["token"] = sentinel_token;
-  doc["device_name"] = device_name;
+  doc["device_id"] = device_name; // Consistency with backend
   JsonArray readings = doc["readings"].to<JsonArray>();
   for (const auto &s : sensors) {
     float val = readSensorValue(s);
@@ -357,7 +409,7 @@ void collectAndPublish() {
   char buffer[1024];
   serializeJson(doc, buffer);
   char topic[100];
-  snprintf(topic, sizeof(topic), "%s%s", DATA_TOPIC_PREFIX, sentinel_token);
+  snprintf(topic, sizeof(topic), "sentinel/v1/data/%s", sentinel_token);
   mqttClient.publish(topic, buffer);
   Serial.println("Data published to MQTT.");
 }
@@ -367,7 +419,7 @@ void setup() {
   Serial.begin(115200);
   loadConfig();
   WiFiManager wm;
-  if (!wm.autoConnect("Sentinel_Node_DYN"))
+  if (!wm.autoConnect("Sentinel_Node_AP"))
     ESP.restart();
 
   server.on("/", handleRoot);
@@ -382,17 +434,19 @@ void setup() {
   });
   server.begin();
 
-  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
+  mqttClient.setServer(mqtt_host, atoi(mqtt_port_str));
   Serial.println("Sentinel Node Ready.");
 }
 
 void loop() {
   server.handleClient();
-  if (!mqttClient.connected())
-    reconnectMQTT();
-  mqttClient.loop();
-  if (millis() - lastMsg > MEASUREMENT_INTERVAL) {
-    lastMsg = millis();
-    collectAndPublish();
+  if (WiFi.status() == WL_CONNECTED) {
+    if (!mqttClient.connected())
+      reconnectMQTT();
+    mqttClient.loop();
+    if (millis() - lastMsg > MEASUREMENT_INTERVAL) {
+      lastMsg = millis();
+      collectAndPublish();
+    }
   }
 }
