@@ -37,4 +37,4 @@ Este firmware avanzado permite gestionar sensores en caliente sin necesidad de r
 
 ## Modificación de Pines
 
-Si deseas soportar más pines o tipos de sensores, solo debes actualizar las funciones `getGpio()` y `handleRoot()` en el código fuente.
+Si se desea soportar más pines o tipos de sensores, solo se debe actualizar las funciones `getGpio()` y `handleRoot()` en el código fuente.
