@@ -406,6 +406,7 @@ void collectAndPublish() {
       r["unit"] = s.unit;
     }
   }
+  doc["ip"] = WiFi.localIP().toString();
   char buffer[1024];
   serializeJson(doc, buffer);
   char topic[100];
