@@ -445,7 +445,7 @@ void publishStatus() {
   mqttClient.publish(topic, buffer);
 }
 
-/** Publica lecturas de sensores */
+/** Publica lecturas de sensores y estado de actuadores */
 void collectAndPublish() {
   if (strlen(sentinel_token) < 5)
     return;
@@ -455,6 +455,7 @@ void collectAndPublish() {
   doc["device_id"] = device_name;
   doc["ip"] = WiFi.localIP().toString();
 
+  // 1. Lecturas de Sensores
   JsonArray readings = doc["readings"].to<JsonArray>();
   for (const auto &s : sensors) {
     float val = readSensorValue(s);
@@ -466,12 +467,21 @@ void collectAndPublish() {
     }
   }
 
-  char buffer[1024];
+  // 2. Estado de Actuadores (para autodescubrimiento en backend)
+  JsonArray acts = doc["actuators"].to<JsonArray>();
+  for (const auto &a : actuators) {
+    JsonObject obj = acts.add<JsonObject>();
+    obj["id"] = a.id;
+    obj["state"] = a.state;
+  }
+
+  char buffer[1536]; // Aumentado para soportar múltiples sensores y actuadores
   serializeJson(doc, buffer);
+
   char topic[100];
   snprintf(topic, sizeof(topic), "%s%s", DATA_TOPIC_PREFIX, sentinel_token);
   mqttClient.publish(topic, buffer);
-  Serial.println("📤 Sensor data published.");
+  Serial.println("📤 Sensor & Actuator data published.");
 }
 
 // ============================================================
