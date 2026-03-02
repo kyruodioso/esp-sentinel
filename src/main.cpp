@@ -824,14 +824,31 @@ void setup() {
   Serial.print("📡 IP: ");
   Serial.println(WiFi.localIP());
 
-  // mDNS: accesible en http://<device_name>.local
-  String mdnsName = String(device_name);
-  mdnsName.toLowerCase();
-  mdnsName.replace(" ", "-");
-  mdnsName.replace("_", "-");
+  // mDNS: hostname único usando últimos 3 bytes de la MAC del chip
+  // Garantiza que múltiples ESP8266 en la misma red no colisionen
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  char macSuffix[8];
+  snprintf(macSuffix, sizeof(macSuffix), "%02x%02x%02x", mac[3], mac[4],
+           mac[5]);
+
+  String mdnsBase = String(device_name);
+  mdnsBase.toLowerCase();
+  mdnsBase.replace(" ", "-");
+  mdnsBase.replace("_", "-");
+
+  // Si el nombre es el default, usar solo el sufijo MAC para que sea corto
+  String mdnsName;
+  if (mdnsBase == "esp8266-sentinel-dyn") {
+    mdnsName = "sentinel-" + String(macSuffix);
+  } else {
+    // Nombre personalizado + sufijo MAC para evitar colisiones
+    mdnsName = mdnsBase + "-" + String(macSuffix);
+  }
+
   if (MDNS.begin(mdnsName)) {
     MDNS.addService("http", "tcp", 80);
-    Serial.print("🌐 mDNS: http://");
+    Serial.print("\U0001f310 mDNS: http://");
     Serial.print(mdnsName);
     Serial.println(".local");
   }
