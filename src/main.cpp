@@ -804,8 +804,22 @@ void setup() {
   loadConfig();
 
   WiFiManager wm;
-  if (!wm.autoConnect("Sentinel_Node_AP"))
-    ESP.restart();
+  wm.setConnectTimeout(
+      20); // 20s máximo para conectar con credenciales guardadas
+  wm.setConnectRetries(3); // 3 intentos antes de rendirse
+  wm.setConfigPortalTimeout(
+      0); // Portal abierto indefinidamente (0 = sin timeout)
+
+  // Si falla la conexión (contraseña incorrecta u otra razón):
+  // borra las credenciales guardadas y reinicia → vuelve a abrir el portal de
+  // configuración
+  if (!wm.autoConnect("Sentinel_Node_AP")) {
+    Serial.println("❌ WiFi falló (contraseña incorrecta o sin señal).");
+    Serial.println("🔄 Borrando credenciales y reiniciando en modo portal...");
+    delay(1000);
+    wm.resetSettings(); // Limpia SSID/password guardados
+    ESP.restart(); // Al reiniciar, no hay credenciales → abre portal de nuevo
+  }
 
   Serial.print("📡 IP: ");
   Serial.println(WiFi.localIP());
