@@ -18,6 +18,7 @@
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <LittleFS.h>
 #include <PubSubClient.h>
 #include <WiFiManager.h>
@@ -809,6 +810,18 @@ void setup() {
   Serial.print("📡 IP: ");
   Serial.println(WiFi.localIP());
 
+  // mDNS: accesible en http://<device_name>.local
+  String mdnsName = String(device_name);
+  mdnsName.toLowerCase();
+  mdnsName.replace(" ", "-");
+  mdnsName.replace("_", "-");
+  if (MDNS.begin(mdnsName)) {
+    MDNS.addService("http", "tcp", 80);
+    Serial.print("🌐 mDNS: http://");
+    Serial.print(mdnsName);
+    Serial.println(".local");
+  }
+
   // Inicializar actuadores en estado seguro antes de conectar MQTT
   initActuators();
 
@@ -837,6 +850,7 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  MDNS.update();
 
   if (WiFi.status() == WL_CONNECTED) {
     if (!mqttClient.connected())
