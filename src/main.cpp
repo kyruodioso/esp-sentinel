@@ -16,6 +16,7 @@
 #include <ArduinoJson.h>
 #include <DHTesp.h>
 #include <DNSServer.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
@@ -23,6 +24,8 @@
 #include <PubSubClient.h>
 #include <WiFiManager.h>
 #include <vector>
+
+void reportDiscoveryHTTP();
 
 // --- CONFIGURATION ---
 #define MQTT_BROKER "broker.hivemq.com"
@@ -75,11 +78,18 @@ std::vector<Sensor> sensors;
 std::vector<Actuator> actuators;
 
 char sentinel_token[40] = "";
-char device_name[40] = "ESP8266_SENTINEL_DYN";
+char device_name[40] = "Nodo_Sentinel"; // Nombre amigable por defecto
 char mqtt_host[64] = "broker.hivemq.com";
 char mqtt_port_str[6] = "1883";
 char mqtt_user[32] = "";
 char mqtt_pass[32] = "";
+char api_url[128] = "http://200.58.98.50/factory/api/v1/iot/ingest/";
+
+// --- Tópicos Discovery ---
+#define DISCOVERY_TOPIC_PREFIX "sentinel/v1/discovery/"
+
+bool shouldSaveConfig =
+    false; // Flag para indicar que la configuración debe guardarse
 
 unsigned long lastMsg = 0;
 unsigned long lastStatus = 0;
@@ -194,7 +204,7 @@ void loadConfig() {
     JsonDocument doc;
     deserializeJson(doc, f);
     strcpy(sentinel_token, doc["token"] | "");
-    strcpy(device_name, doc["name"] | "ESP8266_SENTINEL_DYN");
+    strcpy(device_name, doc["name"] | "Nodo_Sentinel"); // Load device_name
     strcpy(mqtt_host, doc["mqtt_host"] | "broker.hivemq.com");
     strcpy(mqtt_port_str, doc["mqtt_port"] | "1883");
     strcpy(mqtt_user, doc["mqtt_user"] | "");
@@ -268,7 +278,7 @@ void saveSensors() {
 void saveConfig() {
   JsonDocument doc;
   doc["token"] = sentinel_token;
-  doc["name"] = device_name;
+  doc["name"] = device_name; // Save device_name
   doc["mqtt_host"] = mqtt_host;
   doc["mqtt_port"] = mqtt_port_str;
   doc["mqtt_user"] = mqtt_user;
@@ -276,6 +286,12 @@ void saveConfig() {
   File f = LittleFS.open(CONFIG_FILE, "w");
   serializeJson(doc, f);
   f.close();
+}
+
+// Callback para WiFiManager para indicar que la configuración debe guardarse
+void saveConfigCallback() {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
 }
 
 // ============================================================
@@ -409,8 +425,23 @@ void mqttCallback(char *topic, byte *payload, unsigned int length) {
 
   // Solo procesar si el tópico es de comandos para este token
   String cmdTopic = String(CMD_TOPIC_PREFIX) + String(sentinel_token);
+  String discTopic = String(DISCOVERY_TOPIC_PREFIX) + String(device_name);
+
   if (topicStr == cmdTopic) {
     handleCommand((char *)payload);
+  } else if (topicStr == discTopic) {
+    // Autoprovisionamiento: {"token": "sentinel_xxxx"}
+    JsonDocument doc;
+    deserializeJson(doc, payload);
+    if (doc.containsKey("token")) {
+      const char *newToken = doc["token"];
+      if (strlen(newToken) > 5) {
+        strncpy(sentinel_token, newToken, 39);
+        Serial.printf("✨ Token provisioned via MQTT: %s\n", sentinel_token);
+        saveConfig();
+        mqttClient.disconnect(); // Reconectar con el nuevo token
+      }
+    }
   }
 }
 
@@ -490,6 +521,59 @@ void collectAndPublish() {
   }
   mqttClient.publish(topic, buffer);
   Serial.println("📤 Sensor & Actuator data published.");
+
+  // Si no hay token, enviar reporte por HTTP para descubrimiento
+  if (strlen(sentinel_token) < 5) {
+    reportDiscoveryHTTP();
+  }
+}
+
+/** Reporta al servidor vía HTTP para asegurar que se capture la IP pública */
+void reportDiscoveryHTTP() {
+  if (WiFi.status() != WL_CONNECTED)
+    return;
+
+  WiFiClient client;
+  HTTPClient http;
+
+  http.begin(client, api_url);
+  http.addHeader("Content-Type", "application/json");
+
+  JsonDocument doc;
+  doc["token"] = "discovery"; // Token dummy para pasar validación básica
+  doc["device_id"] = device_name;
+  doc["ip"] = WiFi.localIP().toString();
+
+  // Enviar sensores y actuadores para que el backend los conozca desde el
+  // inicio
+  JsonArray readings = doc["readings"].to<JsonArray>();
+  for (const auto &s : sensors) {
+    JsonObject r = readings.add<JsonObject>();
+    r["sensor_id"] = s.id;
+    r["value"] = 0; // Valor dummy para registro inicial
+    r["unit"] = s.unit;
+  }
+
+  JsonArray acts = doc["actuators"].to<JsonArray>();
+  for (const auto &a : actuators) {
+    JsonObject obj = acts.add<JsonObject>();
+    obj["id"] = a.id;
+    obj["state"] = a.state;
+  }
+
+  String payload;
+  serializeJson(doc, payload);
+
+  int httpCode = http.POST(payload);
+
+  if (httpCode > 0) {
+    Serial.printf("🌐 Discovery HTTP [%s] response: %d\n", api_url, httpCode);
+  } else {
+    Serial.printf("❌ Discovery HTTP failed: %s\n",
+                  http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
 }
 
 // ============================================================
@@ -524,6 +608,16 @@ void reconnectMQTT() {
       mqttClient.subscribe(cmdTopic);
       Serial.print("🎮 Subscribed to: ");
       Serial.println(cmdTopic);
+
+      // Si no tiene token, suscribirse al tópico de autoprovisionamiento
+      if (strlen(sentinel_token) < 5) {
+        char discTopic[100];
+        snprintf(discTopic, sizeof(discTopic), "%s%s", DISCOVERY_TOPIC_PREFIX,
+                 device_name);
+        mqttClient.subscribe(discTopic);
+        Serial.print("🔍 Awaiting provision on: ");
+        Serial.println(discTopic);
+      }
     } else {
       Serial.print(" FAIL rc=");
       Serial.println(mqttClient.state());
@@ -835,15 +929,32 @@ void setup() {
   wm.setConfigPortalTimeout(
       0); // Portal abierto indefinidamente (0 = sin timeout)
 
+  // Configurar parámetros personalizados para WiFiManager
+  WiFiManagerParameter custom_device_name(
+      "name", "Nombre del Nodo (Ej: Bomba_Riego_1)", device_name, 40);
+  wm.addParameter(&custom_device_name);
+
+  // Configurar Callback para guardar configuración
+  wm.setSaveConfigCallback(saveConfigCallback);
+
+  String apName = "Sentinel_Node_" + String(ESP.getChipId(), HEX);
   // Si falla la conexión (contraseña incorrecta u otra razón):
   // borra las credenciales guardadas y reinicia → vuelve a abrir el portal de
   // configuración
-  if (!wm.autoConnect("Sentinel_Node_AP")) {
+  if (!wm.autoConnect(apName.c_str())) {
     Serial.println("❌ WiFi falló (contraseña incorrecta o sin señal).");
     Serial.println("🔄 Borrando credenciales y reiniciando en modo portal...");
     delay(1000);
     wm.resetSettings(); // Limpia SSID/password guardados
     ESP.restart(); // Al reiniciar, no hay credenciales → abre portal de nuevo
+  }
+
+  // Si la configuración fue guardada desde el portal, actualizar device_name y
+  // persistir
+  if (shouldSaveConfig) {
+    Serial.println("Saving config from WiFiManager portal...");
+    strncpy(device_name, custom_device_name.getValue(), 39);
+    saveConfig();
   }
 
   Serial.print("📡 IP: ");
@@ -864,7 +975,7 @@ void setup() {
 
   // Si el nombre es el default, usar solo el sufijo MAC para que sea corto
   String mdnsName;
-  if (mdnsBase == "esp8266-sentinel-dyn") {
+  if (mdnsBase == "nodo-sentinel") { // Check against the new default name
     mdnsName = "sentinel-" + String(macSuffix);
     // IMPORTANTE: actualizar device_name para que el backend lo reconozca por
     // este ID único
