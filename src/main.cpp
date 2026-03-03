@@ -447,8 +447,9 @@ void publishStatus() {
 
 /** Publica lecturas de sensores y estado de actuadores */
 void collectAndPublish() {
-  if (strlen(sentinel_token) < 5)
-    return;
+  // Para autodescubrimiento: si no hay token, enviamos igual para que el
+  // backend nos vea pero el topic será especial (o el token irá vacío en el
+  // JSON) if (strlen(sentinel_token) < 5) return;
 
   JsonDocument doc;
   doc["token"] = sentinel_token;
@@ -479,7 +480,14 @@ void collectAndPublish() {
   serializeJson(doc, buffer);
 
   char topic[100];
-  snprintf(topic, sizeof(topic), "%s%s", DATA_TOPIC_PREFIX, sentinel_token);
+  if (strlen(sentinel_token) >= 5) {
+    snprintf(topic, sizeof(topic), "%s%s", DATA_TOPIC_PREFIX, sentinel_token);
+  } else {
+    // Si no tiene token, publica en un sub-topic de discovery usando su
+    // nombre/MAC
+    snprintf(topic, sizeof(topic), "%ssynergy_discovery/%s", DATA_TOPIC_PREFIX,
+             device_name);
+  }
   mqttClient.publish(topic, buffer);
   Serial.println("📤 Sensor & Actuator data published.");
 }
@@ -496,16 +504,23 @@ void reconnectMQTT() {
     Serial.print(mqtt_host);
     Serial.print("...");
 
+    // Si no hay token, usamos el nombre del dispositivo para el ClientID
     bool connected = strlen(mqtt_user) > 0
                          ? mqttClient.connect(device_name, mqtt_user, mqtt_pass)
                          : mqttClient.connect(device_name);
 
     if (connected) {
       Serial.println(" OK");
-      // Suscribirse al tópico de comandos
+      // Suscribirse al tópico de comandos (con token o con nombre si no hay
+      // token)
       char cmdTopic[100];
-      snprintf(cmdTopic, sizeof(cmdTopic), "%s%s", CMD_TOPIC_PREFIX,
-               sentinel_token);
+      if (strlen(sentinel_token) >= 5) {
+        snprintf(cmdTopic, sizeof(cmdTopic), "%s%s", CMD_TOPIC_PREFIX,
+                 sentinel_token);
+      } else {
+        snprintf(cmdTopic, sizeof(cmdTopic), "%sdiscovery/%s", CMD_TOPIC_PREFIX,
+                 device_name);
+      }
       mqttClient.subscribe(cmdTopic);
       Serial.print("🎮 Subscribed to: ");
       Serial.println(cmdTopic);
@@ -851,6 +866,9 @@ void setup() {
   String mdnsName;
   if (mdnsBase == "esp8266-sentinel-dyn") {
     mdnsName = "sentinel-" + String(macSuffix);
+    // IMPORTANTE: actualizar device_name para que el backend lo reconozca por
+    // este ID único
+    snprintf(device_name, sizeof(device_name), "SENTINEL_%s", macSuffix);
   } else {
     // Nombre personalizado + sufijo MAC para evitar colisiones
     mdnsName = mdnsBase + "-" + String(macSuffix);
