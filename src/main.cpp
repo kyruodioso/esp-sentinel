@@ -484,8 +484,10 @@ void collectAndPublish() {
 
   JsonDocument doc;
   doc["token"] = sentinel_token;
-  String unique_id =
-      String(device_name) + "_" + WiFi.macAddress().substring(12);
+  doc["token"] = sentinel_token;
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  String unique_id = String(device_name) + "_" + mac.substring(8);
   doc["device_id"] = unique_id;
   doc["ip"] = WiFi.localIP().toString();
 
@@ -545,8 +547,10 @@ void reportDiscoveryHTTP() {
   JsonDocument doc;
   doc["token"] = "discovery";
   // Usar el nombre con MAC para asegurar que sea único en el descubrimiento
-  String unique_id =
-      String(device_name) + "_" + WiFi.macAddress().substring(12);
+  doc["token"] = sentinel_token;
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  String unique_id = String(device_name) + "_" + mac.substring(8);
   doc["device_id"] = unique_id;
   doc["ip"] = WiFi.localIP().toString();
 
