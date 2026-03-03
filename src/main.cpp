@@ -480,12 +480,13 @@ void publishStatus() {
 /** Publica lecturas de sensores y estado de actuadores */
 void collectAndPublish() {
   // Para autodescubrimiento: si no hay token, enviamos igual para que el
-  // backend nos vea pero el topic será especial (o el token irá vacío en el
-  // JSON) if (strlen(sentinel_token) < 5) return;
+  // backend nos vea pero el topic será especial.
 
   JsonDocument doc;
   doc["token"] = sentinel_token;
-  doc["device_id"] = device_name;
+  String unique_id =
+      String(device_name) + "_" + WiFi.macAddress().substring(12);
+  doc["device_id"] = unique_id;
   doc["ip"] = WiFi.localIP().toString();
 
   // 1. Lecturas de Sensores
