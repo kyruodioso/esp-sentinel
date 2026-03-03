@@ -254,6 +254,7 @@ void saveActuators() {
     obj["id"] = a.id;
     obj["pin"] = a.pin;
     obj["type"] = (int)a.type;
+    obj["state"] = a.state; // Guardar estado actual
   }
   File f = LittleFS.open(ACTUATORS_FILE, "w");
   serializeJson(doc, f);
@@ -510,14 +511,15 @@ void collectAndPublish() {
   char buffer[1536]; // Aumentado para soportar múltiples sensores y actuadores
   serializeJson(doc, buffer);
 
-  char topic[100];
+  char topic[120];
   if (strlen(sentinel_token) >= 5) {
     snprintf(topic, sizeof(topic), "%s%s", DATA_TOPIC_PREFIX, sentinel_token);
   } else {
-    // Si no tiene token, publica en un sub-topic de discovery usando su
-    // nombre/MAC
-    snprintf(topic, sizeof(topic), "%ssynergy_discovery/%s", DATA_TOPIC_PREFIX,
-             device_name);
+    // Usar MAC para evitar colisiones en el descubrimiento
+    String mac_suffix = WiFi.macAddress();
+    mac_suffix.replace(":", "");
+    snprintf(topic, sizeof(topic), "%ssynergy_discovery/%s_%s",
+             DATA_TOPIC_PREFIX, device_name, mac_suffix.substring(8).c_str());
   }
   mqttClient.publish(topic, buffer);
   Serial.println("📤 Sensor & Actuator data published.");
@@ -540,8 +542,11 @@ void reportDiscoveryHTTP() {
   http.addHeader("Content-Type", "application/json");
 
   JsonDocument doc;
-  doc["token"] = "discovery"; // Token dummy para pasar validación básica
-  doc["device_id"] = device_name;
+  doc["token"] = "discovery";
+  // Usar el nombre con MAC para asegurar que sea único en el descubrimiento
+  String unique_id =
+      String(device_name) + "_" + WiFi.macAddress().substring(12);
+  doc["device_id"] = unique_id;
   doc["ip"] = WiFi.localIP().toString();
 
   // Enviar sensores y actuadores para que el backend los conozca desde el
