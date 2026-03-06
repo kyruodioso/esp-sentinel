@@ -721,13 +721,23 @@ void handleRoot() {
           "x=document.getElementById(id);x.style.display=(x.style.display==='"
           "block')?'none':'block';}</script>";
   html += "</head><body>";
-  html += "<h1><svg width='24' height='24' viewBox='0 0 24 24' fill='none' "
-          "stroke='currentColor' stroke-width='3' stroke-linecap='round' "
-          "stroke-linejoin='round'><path d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 "
-          "21 8 22'/><path d='M13 21v-2'/><path d='M17 21v-4'/><path d='M21 "
-          "21v-7'/><path d='M9 15h2'/></svg>SENTINEL Node</h1><div "
-          "class='dev-name'>" +
-          String(device_name) + "</div>";
+  html +=
+      "<h1><svg width='32' height='32' viewBox='0 0 500 540' fill='none' "
+      "xmlns='http://www.w3.org/2000/svg'><defs><linearGradient id='lg' "
+      "x1='250' y1='50' x2='250' y2='450' gradientUnits='userSpaceOnUse'><stop "
+      "stop-color='#4ADE80'/><stop offset='1' "
+      "stop-color='#166534'/></linearGradient><linearGradient id='sg' x1='250' "
+      "y1='50' x2='450' y2='250' gradientUnits='userSpaceOnUse'><stop "
+      "stop-color='black' stop-opacity='0.2'/><stop offset='1' "
+      "stop-color='black' stop-opacity='0'/></linearGradient></defs><path "
+      "d='M250 40C180 140 80 240 80 340C80 430 156 503 250 503C344 503 420 430 "
+      "420 340C420 240 320 140 250 40Z' fill='url(#lg)'/><path d='M250 40C320 "
+      "140 420 240 420 340C420 430 344 503 250 503V40Z' fill='url(#sg)'/><text "
+      "x='250' y='385' text-anchor='middle' fill='white' "
+      "font-family='sans-serif' font-weight='900' "
+      "font-size='240'>S</text></svg> SENTINEL Node</h1><div "
+      "class='dev-name'>" +
+      String(device_name) + "</div>";
 
   // ── LIVE SENSOR MONITOR ──
   html += "<div class='glass'><h3>Live Sensors <span "
