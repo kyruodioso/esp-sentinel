@@ -644,194 +644,234 @@ void handleRoot() {
       "<html><head><meta name='viewport' "
       "content='width=device-width,initial-scale=1'><meta charset='UTF-8'>";
   html += "<style>";
-  html += "body{font-family:'Segoe "
-          "UI',system-ui,sans-serif;background:linear-gradient(135deg,#1d4e89 "
-          "0%,#00b295 "
-          "100%);min-height:100vh;margin:0;padding:20px;color:white;display:"
-          "flex;flex-direction:column;align-items:center;}";
-  html += ".glass{background:rgba(255,255,255,.1);backdrop-filter:blur(12px);"
-          "border:1px solid "
-          "rgba(255,255,255,.2);border-radius:20px;box-shadow:0 8px 32px 0 "
-          "rgba(0,0,0,.37);padding:25px;margin-bottom:25px;width:100%;max-"
-          "width:450px;box-sizing:border-box;}";
-  html += "h1{font-weight:300;letter-spacing:2px;text-transform:uppercase;"
-          "margin:0 0 5px 0;text-align:center;}";
-  html += ".dev-name{font-size:14px;opacity:.8;margin-bottom:30px;letter-"
-          "spacing:1px;}";
   html +=
-      "h3{margin-top:0;font-weight:400;color:#a2ffd1;border-bottom:1px solid "
-      "rgba(255,255,255,.1);padding-bottom:10px;display:flex;justify-content:"
-      "space-between;align-items:center;}";
-  html += ".live-val{background:#a2ffd1;color:#1d4e89;padding:2px "
-          "8px;border-radius:20px;font-weight:bold;font-size:14px;}";
-  html += ".act-on{background:#2ecc71;color:white;padding:2px "
-          "10px;border-radius:20px;font-weight:bold;font-size:12px;}";
-  html += ".act-off{background:#e74c3c;color:white;padding:2px "
-          "10px;border-radius:20px;font-weight:bold;font-size:12px;}";
-  html += "ul{list-style:none;padding:0;}";
-  html += "li{background:rgba(0,0,0,.2);padding:12px "
-          "15px;border-radius:10px;margin-bottom:10px;display:flex;justify-"
-          "content:space-between;align-items:center;border:1px solid "
-          "rgba(255,255,255,.05);}";
-  html += "input,select{width:100%;padding:12px;margin:10px "
-          "0;background:rgba(255,255,255,.05);border:1px solid "
-          "rgba(255,255,255,.2);border-radius:10px;color:white;outline:none;}";
-  html += "button{width:100%;padding:12px;margin-top:10px;border:none;border-"
-          "radius:10px;cursor:pointer;font-weight:600;text-transform:uppercase;"
-          "transition:.3s;}";
-  html += ".btn-add{background:linear-gradient(90deg,#2ecc71,#27ae60);color:"
-          "white;}";
-  html += ".btn-act-on{background:linear-gradient(90deg,#00b4d8,#0077b6);color:"
-          "white;}";
-  html += ".btn-act-off{background:linear-gradient(90deg,#e74c3c,#c0392b);"
-          "color:white;}";
-  html += ".btn-token{background:linear-gradient(90deg,#f39c12,#e67e22);color:"
-          "white;}";
-  html += ".btn-reboot{background:linear-gradient(90deg,#3498db,#2980b9);color:"
-          "white;}";
-  html += ".btn-wifi{background:linear-gradient(90deg,#9b59b6,#8e44ad);color:"
-          "white;}";
-  html += ".btn-del{width:auto;padding:5px "
-          "12px;margin:0;background:#e74c3c;font-size:11px;}";
-  html += "option{background:#1d4e89;color:white;}";
-  html += "small{display:block;margin-top:10px;color:#a2ffd1;font-weight:bold;"
-          "font-size:10px;text-transform:uppercase;}";
+      ":root{--bg:#0f172a;--card:rgba(30,41,59,0.7);--accent:#10b981;--hover:#"
+      "059669;--text:#f8fafc;--dim:#94a3b8;--border:rgba(16,185,129,0.15);}";
+  html += "body{font-family:'Inter',system-ui,sans-serif;background-color:var(-"
+          "-bg);background-image:radial-gradient(at 0% "
+          "0%,rgba(16,185,129,0.15) 0,transparent 50%),radial-gradient(at 100% "
+          "0%,rgba(59,130,246,0.1) 0,transparent "
+          "50%);min-height:100vh;margin:0;padding:20px;color:var(--text);"
+          "display:flex;flex-direction:column;align-items:center;}";
+  html += ".glass{background:var(--card);backdrop-filter:blur(16px);border:1px "
+          "solid var(--border);border-radius:24px;box-shadow:0 10px 40px -10px "
+          "rgba(0,0,0,0.5);padding:24px;margin-bottom:24px;width:100%;max-"
+          "width:480px;box-sizing:border-box;}";
+  html += "h1{font-weight:900;letter-spacing:-0.02em;text-transform:uppercase;"
+          "margin:0;font-size:20px;display:flex;align-items:center;justify-"
+          "content:center;gap:10px;color:var(--accent);}";
+  html += ".dev-name{font-size:12px;color:var(--dim);margin:4px 0 32px "
+          "0;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;"
+          "opacity:0.8;}";
+  html += "h3{margin:0 0 16px "
+          "0;font-weight:700;font-size:14px;color:var(--text);letter-spacing:0."
+          "05em;text-transform:uppercase;display:flex;justify-content:space-"
+          "between;align-items:center;opacity:0.9;}";
+  html += ".live-val{background:rgba(16,185,129,0.1);color:var(--accent);"
+          "padding:4px "
+          "10px;border-radius:8px;font-weight:800;font-size:10px;text-"
+          "transform:uppercase;border:1px solid var(--border);}";
+  html += ".act-on{background:#065f46;color:#34d399;padding:4px "
+          "10px;border-radius:8px;font-weight:800;font-size:10px;border:1px "
+          "solid rgba(52,211,153,0.2);}";
+  html += ".act-off{background:#451a1a;color:#f87171;padding:4px "
+          "10px;border-radius:8px;font-weight:800;font-size:10px;border:1px "
+          "solid rgba(248,113,113,0.2);}";
+  html += "ul{list-style:none;padding:0;margin:0;}";
+  html +=
+      "li{background:rgba(15,23,42,0.4);padding:16px;border-radius:16px;margin-"
+      "bottom:12px;display:flex;justify-content:space-between;align-items:"
+      "center;border:1px solid rgba(255,255,255,0.03);transition:0.2s;}";
+  html += "li:hover{border-color:var(--border);background:rgba(15,23,42,0.6);}";
+  html += "input,select,textarea{width:100%;padding:14px;margin:8px 0 16px "
+          "0;background:rgba(15,23,42,0.5);border:1px solid "
+          "var(--border);border-radius:12px;color:var(--text);outline:none;"
+          "font-size:14px;transition:0.2s;}";
+  html += "input:focus,select:focus{border-color:var(--accent);background:rgba("
+          "15,23,42,0.8);box-shadow:0 0 0 3px rgba(16,185,129,0.1);}";
+  html += "button{width:100%;padding:14px;border:none;border-radius:12px;"
+          "cursor:pointer;font-weight:700;font-size:14px;text-transform:"
+          "uppercase;letter-spacing:0.05em;transition:0.2s;display:flex;align-"
+          "items:center;justify-content:center;gap:8px;}";
+  html += ".btn-add{background:var(--accent);color:var(--bg);box-shadow:0 10px "
+          "15px -3px rgba(16,185,129,0.4);}";
+  html += ".btn-add:hover{background:var(--hover);transform:translateY(-1px);}";
+  html += ".btn-act-on{background:rgba(16,185,129,0.1);color:var(--accent);"
+          "border:1px solid var(--border);}";
+  html += ".btn-act-on:hover{background:rgba(16,185,129,0.2);}";
+  html += ".btn-act-off{background:rgba(239,68,68,0.1);color:#ef4444;border:"
+          "1px solid rgba(239,68,68,0.2);}";
+  html += ".btn-act-off:hover{background:rgba(239,68,68,0.2);}";
+  html += ".btn-token{background:transparent;color:var(--text);border:1px "
+          "solid rgba(255,255,255,0.1);}";
+  html += ".btn-token:hover{background:rgba(255,255,255,0.05);border-color:"
+          "rgba(255,255,255,0.2);}";
+  html += ".btn-reboot{background:rgba(59,130,246,0.1);border:1px solid "
+          "rgba(59,130,246,0.2);color:#60a5fa;}";
+  html += ".btn-wifi{background:rgba(168,85,247,0.1);border:1px solid "
+          "rgba(168,85,247,0.2);color:#c084fc;}";
+  html += ".btn-del{width:auto;padding:6px "
+          "12px;margin:0;background:rgba(239,68,68,0.1);color:#ef4444;font-"
+          "size:10px;border-radius:8px;}";
+  html += "option{background:#1e293b;color:var(--text);}";
+  html += "small{display:block;margin-bottom:6px;color:var(--dim);font-weight:"
+          "700;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;}";
   html += "</style>";
   html += "<script>function toggle(id){var "
           "x=document.getElementById(id);x.style.display=(x.style.display==='"
           "block')?'none':'block';}</script>";
   html += "</head><body>";
-  html += "<h1>Sentinel Node</h1><div class='dev-name'>" + String(device_name) +
-          "</div>";
+  html += "<h1><svg width='24' height='24' viewBox='0 0 24 24' fill='none' "
+          "stroke='currentColor' stroke-width='3' stroke-linecap='round' "
+          "stroke-linejoin='round'><path d='M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 "
+          "21 8 22'/><path d='M13 21v-2'/><path d='M17 21v-4'/><path d='M21 "
+          "21v-7'/><path d='M9 15h2'/></svg>SENTINEL Node</h1><div "
+          "class='dev-name'>" +
+          String(device_name) + "</div>";
 
   // ── LIVE SENSOR MONITOR ──
   html += "<div class='glass'><h3>Live Sensors <span "
           "class='live-val'>Real-time</span></h3><ul>";
   if (sensors.empty())
-    html += "<p style='opacity:.5;font-size:13px;'>No sensors configured.</p>";
+    html += "<p "
+            "style='opacity:.4;font-size:12px;text-align:center;padding:20px;'>"
+            "No sensors configured.</p>";
   for (size_t i = 0; i < sensors.size(); i++) {
     float val = readSensorValue(sensors[i]);
     String valStr = isnan(val) ? "--" : String(val, 1);
-    html += "<li><div><b>" + sensors[i].id +
+    html += "<li><div><b style='font-size:14px;'>" + sensors[i].id +
             "</b></div>"
-            "<div style='color:#a2ffd1;font-weight:bold'>" +
-            valStr + " " + sensors[i].unit +
-            "</div>"
+            "<div style='display:flex;align-items:center;gap:12px;'><div "
+            "style='color:var(--accent);font-weight:900;font-size:18px;'>" +
+            valStr +
+            " <span style='font-size:12px;color:var(--dim);font-weight:400;'>" +
+            sensors[i].unit +
+            "</span></div>"
             "<a href='/delete_s?index=" +
-            String(i) + "'><button class='btn-del'>Del</button></a></li>";
+            String(i) + "'><button class='btn-del'>×</button></a></div></li>";
   }
-  html +=
-      "</ul><small style='opacity:.5'>Refresh to update readings</small></div>";
+  html += "</ul><p "
+          "style='opacity:.3;font-size:10px;text-align:center;margin-top:16px;'"
+          ">Refreshed automatically on page load</p></div>";
 
   // ── ACTUATOR STATUS & CONTROL ──
   html += "<div class='glass'><h3>Actuators <span "
           "class='live-val'>Control</span></h3><ul>";
   if (actuators.empty())
-    html +=
-        "<p style='opacity:.5;font-size:13px;'>No actuators configured.</p>";
+    html += "<p "
+            "style='opacity:.4;font-size:12px;text-align:center;padding:20px;'>"
+            "No actuators configured.</p>";
   for (size_t i = 0; i < actuators.size(); i++) {
     String statusBadge = actuators[i].state
-                             ? "<span class='act-on'>ON</span>"
-                             : "<span class='act-off'>OFF</span>";
-    String toggleBtn =
-        actuators[i].state
-            ? "<a href='/act?index=" + String(i) +
-                  "&cmd=off'><button class='btn-act-off' "
-                  "style='width:auto;padding:5px "
-                  "12px;margin:0;font-size:11px;'>STOP</button></a>"
-            : "<a href='/act?index=" + String(i) +
-                  "&cmd=on&dur=15'><button class='btn-act-on' "
-                  "style='width:auto;padding:5px "
-                  "12px;margin:0;font-size:11px;'>ON 15m</button></a>";
-    html += "<li><div><b>" + actuators[i].id +
-            "</b><br><small "
-            "style='display:inline;font-size:10px;opacity:.6;'>Pin " +
+                             ? "<span class='act-on'>ACTIVE</span>"
+                             : "<span class='act-off'>INACTIVE</span>";
+    String toggleBtn = actuators[i].state
+                           ? "<a href='/act?index=" + String(i) +
+                                 "&cmd=off'><button class='btn-act-off' "
+                                 "style='width:auto;padding:8px "
+                                 "16px;font-size:10px;'>OFF</button></a>"
+                           : "<a href='/act?index=" + String(i) +
+                                 "&cmd=on&dur=15'><button class='btn-act-on' "
+                                 "style='width:auto;padding:8px "
+                                 "16px;font-size:10px;'>ON 15m</button></a>";
+    html += "<li><div><b style='font-size:14px;'>" + actuators[i].id +
+            "</b><br><span style='font-size:10px;color:var(--dim);'>GPIO " +
             String(actuators[i].pin) +
-            "</small></div>"
-            "<div style='display:flex;gap:8px;align-items:center'>" +
+            "</span></div>"
+            "<div style='display:flex;gap:12px;align-items:center'>" +
             statusBadge + toggleBtn + "<a href='/delete_a?index=" + String(i) +
-            "'><button class='btn-del'>Del</button></a></div></li>";
+            "'><button class='btn-del'>×</button></a></div></li>";
   }
   html += "</ul>";
 
-  // Add Actuator Form
-  html += "<form action='/add_a' method='GET' "
-          "style='margin-top:15px;border-top:1px solid "
-          "rgba(255,255,255,.1);padding-top:15px;'>";
-  html += "<small>Actuator ID (e.g. VALVE_01, PUMP_01)</small><input name='id' "
-          "placeholder='VALVE_01'>";
-  html += "<small>GPIO Pin</small><select name='pin'>"
+  // Add Actuator Form Toggle
+  html += "<button onclick=\"toggle('add-act-form')\" class='btn-token' "
+          "style='margin-top:20px;font-size:11px;'>+ Add Actuator</button>";
+  html += "<div id='add-act-form' "
+          "style='display:none;margin-top:20px;padding-top:20px;border-top:1px "
+          "solid var(--border);'>";
+  html += "<form action='/add_a' method='GET'>";
+  html += "<small>Actuator Identifier</small><input name='id' "
+          "placeholder='e.g. VALVE_01'>";
+  html += "<small>Hardware Pin (GPIO)</small><select name='pin'>"
           "<option value='D1'>D1 (GPIO5)</option><option value='D2'>D2 "
           "(GPIO4)</option>"
           "<option value='D5'>D5 (GPIO14)</option><option value='D6'>D6 "
           "(GPIO12)</option>"
           "<option value='D7'>D7 (GPIO13)</option><option value='D8'>D8 "
           "(GPIO15)</option></select>";
-  html += "<small>Type</small><select name='type'>"
-          "<option value='0'>Relay Normally Open (HIGH=ON)</option>"
-          "<option value='1'>Relay Normally Closed (LOW=ON)</option>"
-          "<option value='2'>Digital Output Generic</option></select>";
-  html += "<button type='submit' class='btn-act-on'>+ Add "
-          "Actuator</button></form></div>";
+  html += "<small>Operating Mode</small><select name='type'>"
+          "<option value='0'>Normally Open (HIGH=ON)</option>"
+          "<option value='1'>Normally Closed (LOW=ON)</option>"
+          "<option value='2'>Generic Digital Output</option></select>";
+  html += "<button type='submit' class='btn-add'>Register "
+          "Actuator</button></form></div></div>";
 
-  // ── ADD SENSOR ──
+  // ── ADD SENSOR FORM ──
   html += "<div class='glass'><h3>Add Sensor</h3>";
   html += "<form action='/add_s' method='GET'>";
-  html += "<input name='id' placeholder='Sensor ID (e.g. TEMP_01)'>";
-  html += "<select name='pin'><option value='A0'>A0 (Analog)</option><option "
-          "value='D1'>D1</option>"
+  html += "<small>Sensor Name</small><input name='id' placeholder='e.g. "
+          "TEMP_ENTRY'>";
+  html += "<small>Connection Pin</small><select name='pin'><option "
+          "value='A0'>A0 (Analog)</option><option value='D1'>D1</option>"
           "<option value='D2'>D2</option><option value='D5'>D5</option><option "
           "value='D6'>D6</option></select>";
-  html += "<select name='type'>"
+  html += "<small>Sensor Model</small><select name='type'>"
           "<option value='0'>DHT11 Temperature</option><option value='1'>DHT11 "
           "Humidity</option>"
           "<option value='2'>DHT22 Temperature</option><option value='3'>DHT22 "
           "Humidity</option>"
-          "<option value='4'>Analog Raw</option></select>";
-  html += "<input name='unit' placeholder='Unit (e.g. C, %, v)'>";
-  html += "<button type='submit' class='btn-add'>+ Add "
+          "<option value='4'>Analog (Raw Data)</option></select>";
+  html += "<small>Measure Unit</small><input name='unit' placeholder='e.g. °C, "
+          "%, V'>";
+  html += "<button type='submit' class='btn-add'>Register "
           "Sensor</button></form></div>";
 
   // ── SYSTEM SETTINGS ──
-  html += "<div class='glass'><h3>System Settings</h3>";
+  html += "<div class='glass'><h3>System Infrastructure</h3>";
   html += "<button onclick=\"toggle('set-form')\" class='btn-token'>Configure "
-          "Node & MQTT</button>";
+          "Connectivity & MQTT</button>";
   html +=
       "<div id='set-form' style='display:none;margin-top:15px;border-top:1px "
-      "solid rgba(255,255,255,.1);padding-top:15px;'>";
+      "solid var(--border);padding-top:20px;'>";
   html += "<form action='/save_sys' method='GET'>";
-  html += "<small>Device Name</small><input name='name' value='" +
+  html += "<small>Friendly Name</small><input name='name' value='" +
           String(device_name) + "'>";
-  html += "<small>Sentinel Token</small><input type='password' name='token' "
-          "value='" +
+  html += "<small>Sentinel Security Token</small><input type='password' "
+          "name='token' value='" +
           String(sentinel_token) + "'>";
   html += "<div "
-          "style='margin-top:20px;padding:10px;background:rgba(0,0,0,.2);"
-          "border-radius:10px;'>";
-  html += "<p style='font-size:12px;margin:0 0 10px 0;color:#f39c12;'>MQTT "
-          "Broker</p>";
-  html +=
-      "<small>Host</small><input name='mh' value='" + String(mqtt_host) + "'>";
+          "style='margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);"
+          "border-radius:16px;border:1px solid var(--border);'>";
+  html += "<p style='font-size:10px;margin:0 0 12px "
+          "0;color:var(--accent);font-weight:900;text-transform:uppercase;'>"
+          "MQTT Node Link</p>";
+  html += "<small>Broker Host</small><input name='mh' value='" +
+          String(mqtt_host) + "'>";
   html += "<small>Port</small><input name='mp' value='" +
           String(mqtt_port_str) + "'>";
-  html +=
-      "<small>User</small><input name='mu' value='" + String(mqtt_user) + "'>";
+  html += "<small>Username</small><input name='mu' value='" +
+          String(mqtt_user) + "'>";
   html += "<small>Password</small><input type='password' name='mpx' value='" +
           String(mqtt_pass) + "'>";
   html += "</div>";
   html += "<button type='submit' "
-          "style='background:#d35400;color:white;margin-top:20px;'>Save "
-          "Changes</button>";
+          "style='background:rgba(255,255,255,0.05);color:var(--accent);border:"
+          "1px solid var(--border);margin-top:20px;'>Deploy Config</button>";
   html += "</form></div></div>";
 
   // ── FOOTER ──
-  html += "<div style='width:100%;max-width:450px;'>";
-  html +=
-      "<a href='/reboot'><button class='btn-reboot'>Reboot Node</button></a>";
-  html += "<a href='/reset_wifi'><button class='btn-wifi'>Reset "
-          "WiFi</button></a></div>";
-  html += "<p style='font-size:11px;opacity:.5;margin-top:20px;'>Firmware v3.0 "
-          "| Sentinel Actuator Support | Solsteinn Innovations</p>";
+  html += "<div "
+          "style='width:100%;max-width:480px;display:grid;grid-template-"
+          "columns:1fr 1fr;gap:12px;'>";
+  html += "<a href='/reboot' style='text-decoration:none;'><button "
+          "class='btn-reboot'>Reboot</button></a>";
+  html += "<a href='/reset_wifi' style='text-decoration:none;'><button "
+          "class='btn-wifi'>Reset WiFi</button></a></div>";
+  html += "<p "
+          "style='font-size:10px;color:var(--dim);margin-top:24px;text-align:"
+          "center;letter-spacing:0.02em;'>Firmware v3.0 | Sentinel AI Core | "
+          "Solsteinn Innovations</p>";
   html += "</body></html>";
 
   server.send(200, "text/html", html);
