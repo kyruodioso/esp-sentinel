@@ -78,12 +78,14 @@ std::vector<Sensor> sensors;
 std::vector<Actuator> actuators;
 
 char sentinel_token[40] = "";
-char device_name[40] = "Nodo_Sentinel"; // Nombre amigable por defecto
+char device_name[40] = "Nodo_Sentinel";
 char mqtt_host[64] = "broker.hivemq.com";
 char mqtt_port_str[6] = "1883";
 char mqtt_user[32] = "";
 char mqtt_pass[32] = "";
 char api_url[128] = "http://200.58.98.50/factory/api/v1/iot/ingest/";
+char www_user[32] = "admin";
+char www_pass[32] = "sentinel123";
 
 // --- Tópicos Discovery ---
 #define DISCOVERY_TOPIC_PREFIX "sentinel/v1/discovery/"
@@ -209,6 +211,8 @@ void loadConfig() {
     strcpy(mqtt_port_str, doc["mqtt_port"] | "1883");
     strcpy(mqtt_user, doc["mqtt_user"] | "");
     strcpy(mqtt_pass, doc["mqtt_pass"] | "");
+    strcpy(www_user, doc["www_user"] | "admin");
+    strcpy(www_pass, doc["www_pass"] | "sentinel123");
     f.close();
   }
 
@@ -284,6 +288,8 @@ void saveConfig() {
   doc["mqtt_port"] = mqtt_port_str;
   doc["mqtt_user"] = mqtt_user;
   doc["mqtt_pass"] = mqtt_pass;
+  doc["www_user"] = www_user;
+  doc["www_pass"] = www_pass;
   File f = LittleFS.open(CONFIG_FILE, "w");
   serializeJson(doc, f);
   f.close();
@@ -640,6 +646,9 @@ void reconnectMQTT() {
 // ============================================================
 
 void handleRoot() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   String html =
       "<html><head><meta name='viewport' "
       "content='width=device-width,initial-scale=1'><meta charset='UTF-8'>";
@@ -850,6 +859,22 @@ void handleRoot() {
   html += "<small>Sentinel Security Token</small><input type='password' "
           "name='token' value='" +
           String(sentinel_token) + "'>";
+
+  // Web Auth Section
+  html +=
+      "<div "
+      "style='margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);"
+      "border-radius:16px;border:1px solid var(--border);margin-bottom:20px;'>";
+  html += "<p style='font-size:10px;margin:0 0 12px "
+          "0;color:var(--accent);font-weight:900;text-transform:uppercase;'>"
+          "Web UI Access Security</p>";
+  html += "<small>Admin Username</small><input name='wu' value='" +
+          String(www_user) + "'>";
+  html +=
+      "<small>Admin Password</small><input type='password' name='wp' value=''> "
+      "<small style='font-size:8px;'>Leave empty to keep current</small>";
+  html += "</div>";
+
   html += "<div "
           "style='margin-top:20px;padding:16px;background:rgba(0,0,0,0.2);"
           "border-radius:16px;border:1px solid var(--border);'>";
@@ -888,6 +913,9 @@ void handleRoot() {
 }
 
 void handleAddActuator() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   Actuator a;
   a.id = server.arg("id");
   a.pin = getGpio(server.arg("pin"));
@@ -906,6 +934,9 @@ void handleAddActuator() {
 }
 
 void handleDeleteActuator() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   int i = server.arg("index").toInt();
   if (i >= 0 && i < (int)actuators.size()) {
     deactivateActuator(actuators[i]); // Apagar antes de eliminar
@@ -918,6 +949,9 @@ void handleDeleteActuator() {
 
 /** Control manual de actuador desde la UI web */
 void handleActuatorControl() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   int i = server.arg("index").toInt();
   String cmd = server.arg("cmd");
   int dur = server.arg("dur").toInt(); // minutos
@@ -939,6 +973,11 @@ void handleSaveSys() {
   strncpy(mqtt_port_str, server.arg("mp").c_str(), 5);
   strncpy(mqtt_user, server.arg("mu").c_str(), 31);
   strncpy(mqtt_pass, server.arg("mpx").c_str(), 31);
+  strncpy(www_user, server.arg("wu").c_str(), 31);
+  // Solo actualizar password si no está vacío
+  if (server.arg("wp").length() > 0) {
+    strncpy(www_pass, server.arg("wp").c_str(), 31);
+  }
   saveConfig();
   mqttClient.setServer(mqtt_host, atoi(mqtt_port_str));
   mqttClient.disconnect();
@@ -947,6 +986,9 @@ void handleSaveSys() {
 }
 
 void handleAddSensor() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   sensors.push_back({server.arg("id"), getGpio(server.arg("pin")),
                      server.arg("unit"),
                      (SensorType)server.arg("type").toInt()});
@@ -956,6 +998,9 @@ void handleAddSensor() {
 }
 
 void handleDeleteSensor() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   int i = server.arg("index").toInt();
   if (i >= 0 && i < (int)sensors.size()) {
     sensors.erase(sensors.begin() + i);
@@ -966,6 +1011,9 @@ void handleDeleteSensor() {
 }
 
 void handleResetWiFi() {
+  if (!server.authenticate(www_user, www_pass)) {
+    return server.requestAuthentication();
+  }
   server.send(200, "text/plain", "WiFi reset. Node will restart into AP mode.");
   delay(1000);
   WiFiManager wm;
@@ -1065,6 +1113,9 @@ void setup() {
   server.on("/save_sys", handleSaveSys);
   server.on("/reset_wifi", handleResetWiFi);
   server.on("/reboot", []() {
+    if (!server.authenticate(www_user, www_pass)) {
+      return server.requestAuthentication();
+    }
     server.send(200, "text/plain", "Rebooting...");
     delay(1000);
     ESP.restart();
