@@ -83,7 +83,7 @@ char mqtt_host[64] = "broker.hivemq.com";
 char mqtt_port_str[6] = "1883";
 char mqtt_user[32] = "";
 char mqtt_pass[32] = "";
-char api_url[128] = "http://200.58.98.50/factory/api/v1/iot/ingest/";
+char api_url[128] = "http://200.58.98.90/factory/api/v1/iot/ingest/";
 char www_user[32] = "admin";
 char www_pass[32] = "sentinel123";
 
@@ -551,9 +551,8 @@ void reportDiscoveryHTTP() {
   http.addHeader("Content-Type", "application/json");
 
   JsonDocument doc;
-  doc["token"] = "discovery";
-  // Usar el nombre con MAC para asegurar que sea único en el descubrimiento
-  doc["token"] = sentinel_token;
+  doc["token"] = "discovery"; // Token predefinido para indicar que es un
+                              // reporte de descubrimiento
   String mac = WiFi.macAddress();
   mac.replace(":", "");
   String unique_id = String(device_name) + "_" + mac.substring(8);
