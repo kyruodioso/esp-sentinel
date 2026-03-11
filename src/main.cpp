@@ -141,7 +141,7 @@ void activateActuator(Actuator &a, unsigned long duration_ms = 0) {
   pinMode(a.pin, OUTPUT);
   digitalWrite(a.pin, writeVal);
 
-  Serial.print("✅ Actuator ON: ");
+  Serial.print("[OK] Actuator ON: ");
   Serial.print(a.id);
   if (duration_ms > 0) {
     Serial.print(" | Auto-OFF in ");
@@ -161,7 +161,7 @@ void deactivateActuator(Actuator &a) {
   pinMode(a.pin, OUTPUT);
   digitalWrite(a.pin, writeVal);
 
-  Serial.print("⛔ Actuator OFF: ");
+  Serial.print("[OFF] Actuator OFF: ");
   Serial.println(a.id);
 }
 
@@ -185,7 +185,7 @@ void checkActuatorTimers() {
   for (auto &a : actuators) {
     if (a.state && a.timer_ms > 0) {
       if (millis() - a.activated_at >= a.timer_ms) {
-        Serial.print("⏰ Auto-shutoff: ");
+        Serial.print("[TIMER] Auto-shutoff: ");
         Serial.println(a.id);
         deactivateActuator(a);
       }
@@ -366,7 +366,7 @@ void handleCommand(const char *payload) {
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload);
   if (err) {
-    Serial.println("❌ Invalid command JSON");
+    Serial.println("[FAIL] Invalid command JSON");
     return;
   }
 
@@ -375,7 +375,7 @@ void handleCommand(const char *payload) {
   int duration = doc["duration"] | 0; // minutos
   unsigned long duration_ms = (unsigned long)duration * 60UL * 1000UL;
 
-  Serial.print("🎮 CMD: action=");
+  Serial.print("[CMD] CMD: action=");
   Serial.print(action);
   if (actuator_id.length()) {
     Serial.print(" actuator=");
@@ -417,7 +417,7 @@ void handleCommand(const char *payload) {
     lastStatus = 0; // Forzar publicación inmediata
 
   } else {
-    Serial.print("⚠️ Unknown action: ");
+    Serial.print("[WARN] Unknown action: ");
     Serial.println(action);
   }
 }
@@ -425,7 +425,7 @@ void handleCommand(const char *payload) {
 void mqttCallback(char *topic, byte *payload, unsigned int length) {
   payload[length] = '\0';
   String topicStr = String(topic);
-  Serial.print("📥 MQTT ← [");
+  Serial.print("[RECV] MQTT ← [");
   Serial.print(topicStr);
   Serial.print("] ");
   Serial.println((char *)payload);
@@ -444,7 +444,7 @@ void mqttCallback(char *topic, byte *payload, unsigned int length) {
       const char *newToken = doc["token"];
       if (strlen(newToken) > 5) {
         strncpy(sentinel_token, newToken, 39);
-        Serial.printf("✨ Token provisioned via MQTT: %s\n", sentinel_token);
+        Serial.printf("[INIT] Token provisioned via MQTT: %s\n", sentinel_token);
         saveConfig();
         mqttClient.disconnect(); // Reconectar con el nuevo token
       }
@@ -531,7 +531,7 @@ void collectAndPublish() {
              DATA_TOPIC_PREFIX, device_name, mac_suffix.substring(8).c_str());
   }
   mqttClient.publish(topic, buffer);
-  Serial.println("📤 Sensor & Actuator data published.");
+  Serial.println("[SEND] Sensor & Actuator data published.");
 
   // Si no hay token, enviar reporte por HTTP para descubrimiento
   if (strlen(sentinel_token) < 5) {
@@ -582,9 +582,9 @@ void reportDiscoveryHTTP() {
   int httpCode = http.POST(payload);
 
   if (httpCode > 0) {
-    Serial.printf("🌐 Discovery HTTP [%s] response: %d\n", api_url, httpCode);
+    Serial.printf("[WEB] Discovery HTTP [%s] response: %d\n", api_url, httpCode);
   } else {
-    Serial.printf("❌ Discovery HTTP failed: %s\n",
+    Serial.printf("[FAIL] Discovery HTTP failed: %s\n",
                   http.errorToString(httpCode).c_str());
   }
 
@@ -621,7 +621,7 @@ void reconnectMQTT() {
                  device_name);
       }
       mqttClient.subscribe(cmdTopic);
-      Serial.print("🎮 Subscribed to: ");
+      Serial.print("[CMD] Subscribed to: ");
       Serial.println(cmdTopic);
 
       // Si no tiene token, suscribirse al tópico de autoprovisionamiento
@@ -630,7 +630,7 @@ void reconnectMQTT() {
         snprintf(discTopic, sizeof(discTopic), "%s%s", DISCOVERY_TOPIC_PREFIX,
                  device_name);
         mqttClient.subscribe(discTopic);
-        Serial.print("🔍 Awaiting provision on: ");
+        Serial.print("[SEARCH] Awaiting provision on: ");
         Serial.println(discTopic);
       }
     } else {
@@ -1026,7 +1026,7 @@ void handleResetWiFi() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n🚀 Sentinel Node v3.0 booting...");
+  Serial.println("\n[START] Sentinel Node v3.0 booting...");
   loadConfig();
 
   WiFiManager wm;
@@ -1049,8 +1049,8 @@ void setup() {
   // borra las credenciales guardadas y reinicia → vuelve a abrir el portal de
   // configuración
   if (!wm.autoConnect(apName.c_str())) {
-    Serial.println("❌ WiFi falló (contraseña incorrecta o sin señal).");
-    Serial.println("🔄 Borrando credenciales y reiniciando en modo portal...");
+    Serial.println("[FAIL] WiFi falló (contraseña incorrecta o sin señal).");
+    Serial.println("[RST] Borrando credenciales y reiniciando en modo portal...");
     delay(1000);
     wm.resetSettings(); // Limpia SSID/password guardados
     ESP.restart(); // Al reiniciar, no hay credenciales → abre portal de nuevo
@@ -1064,7 +1064,7 @@ void setup() {
     saveConfig();
   }
 
-  Serial.print("📡 IP: ");
+  Serial.print("[NET] IP: ");
   Serial.println(WiFi.localIP());
 
   // mDNS: hostname único usando últimos 3 bytes de la MAC del chip
@@ -1094,7 +1094,7 @@ void setup() {
 
   if (MDNS.begin(mdnsName)) {
     MDNS.addService("http", "tcp", 80);
-    Serial.print("\U0001f310 mDNS: http://");
+    Serial.print("[WEB] mDNS: http://");
     Serial.print(mdnsName);
     Serial.println(".local");
   }
@@ -1125,7 +1125,7 @@ void setup() {
   mqttClient.setCallback(mqttCallback);
   mqttClient.setBufferSize(1024); // Aumentar buffer para payloads de actuador
 
-  Serial.println("✅ Sentinel Node Ready.");
+  Serial.println("[OK] Sentinel Node Ready.");
 }
 
 void loop() {
